@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Hitbox2Screens</RootNamespace>
     <AssemblyName>Hitbox2Screens</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />

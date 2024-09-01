@@ -1,7 +1,8 @@
-﻿using System.Drawing;
-using System.IO;
+﻿using System;
+using System.Drawing;
 using System.Drawing.Drawing2D;
-using System;
+using System.IO;
+using System.Reflection;
 
 namespace Hitbox2Screens
 {
@@ -9,28 +10,66 @@ namespace Hitbox2Screens
     {
         private static void ScaleImage(string pathStr)
         {
-            Image image = Image.FromFile(pathStr + "\\level.png");
-            var newWidth = (int)(image.Width * 8);
-            var newHeight = (int)(image.Height * 8);
-            var scaledBitmap = new Bitmap(newWidth, newHeight);
+            FileStream fileStream = null;
+            Image image;
+            bool isVisualLevel = false;
+            try
+            {
+                if (File.Exists(pathStr + "\\level.png"))
+                {
+                    Console.WriteLine("Found level.png");
+                    fileStream = new FileStream(pathStr + "\\level.png", FileMode.Open, FileAccess.Read);
+                }
+                else if (File.Exists(pathStr + "\\visual_level.png"))
+                {
+                    Console.WriteLine("Found visual_level.png");
+                    fileStream = new FileStream(pathStr + "\\visual_level.png", FileMode.Open, FileAccess.Read);
+                    isVisualLevel = true;
+                }
+                else
+                {
+                    throw new FileNotFoundException();
+                }
+                image = Image.FromStream(fileStream, true, false);
+            }
+            finally
+            {
+                fileStream?.Dispose();
+            }
 
-            var scaledGraph = Graphics.FromImage(scaledBitmap);
-            scaledGraph.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.AssumeLinear;
-            scaledGraph.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-            scaledGraph.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            scaledGraph.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+            int newWidth = image.Width * 8;
+            int newHeight = image.Height * 8;
+            Bitmap scaledBitmap = new Bitmap(newWidth, newHeight);
 
-            var imageRectangle = new Rectangle(0, 0, newWidth, newHeight);
+            Graphics scaledGraph = Graphics.FromImage(scaledBitmap);
+            scaledGraph.CompositingQuality = CompositingQuality.AssumeLinear;
+            scaledGraph.InterpolationMode = InterpolationMode.NearestNeighbor;
+            scaledGraph.SmoothingMode = SmoothingMode.AntiAlias;
+            scaledGraph.PixelOffsetMode = PixelOffsetMode.Half;
+
+            Rectangle imageRectangle = new Rectangle(0, 0, newWidth, newHeight);
             scaledGraph.DrawImage(image, imageRectangle);
 
             pathStr = pathStr + ("\\{0}.png");
             int screenNo = 0;
-            for (int i = 0; i < 13; i++)
+            if (!isVisualLevel)
             {
-                for (int j = 0; j < 13; j++)
+                for (int i = 0; i < 13; i++)
+                {
+                    for (int j = 0; j < 13; j++)
+                    {
+                        screenNo++;
+                        Rectangle cropArea = new Rectangle(480 * i, 360 * j, 480, 360);
+                        scaledBitmap.Clone(cropArea, scaledBitmap.PixelFormat).Save(string.Format(pathStr, screenNo));
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < 169; i++)
                 {
                     screenNo++;
-                    var cropArea = new Rectangle((480 * i), (360 * j), 480, 360);
+                    Rectangle cropArea = new Rectangle(0, 360 * (168 - i), 480, 360);
                     scaledBitmap.Clone(cropArea, scaledBitmap.PixelFormat).Save(string.Format(pathStr, screenNo));
                 }
             }
@@ -39,22 +78,21 @@ namespace Hitbox2Screens
             scaledBitmap.Dispose();
             image.Dispose();
 
-            Console.WriteLine("\nImage objects removed from memory");
-            Console.WriteLine("\nProgram has finished running...");
+            Console.WriteLine("Image objects removed from memory");
+            Console.WriteLine("Program has finished running...");
             Console.ReadLine();
         }
 
-        static void Main(string[] args)
+        static void Main()
         {
-            var codeBaseUri = new Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase);
-            var pathStr = Path.GetDirectoryName(codeBaseUri.AbsolutePath);
-            Console.WriteLine("Path Selected For Use");
+            var pathStr = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            Console.WriteLine("Searching in: " + pathStr);
             try { ScaleImage(pathStr); }
-            catch (System.IO.FileNotFoundException)
+            catch (FileNotFoundException)
             {
-                System.Console.WriteLine("There was an error opening the level file. " +
-                    "Please check the path.");
-                System.Console.ReadLine();
+                Console.WriteLine("No level.png or visual_level.png found.");
+                Console.WriteLine("Please make sure the png are in the same folder as the exe.");
+                Console.ReadLine();
             }
         }
     }
