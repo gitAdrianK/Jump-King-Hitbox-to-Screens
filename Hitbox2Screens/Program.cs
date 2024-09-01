@@ -34,6 +34,7 @@ namespace Hitbox2Screens
             }
             finally
             {
+                fileStream?.Close();
                 fileStream?.Dispose();
             }
 
@@ -57,7 +58,7 @@ namespace Hitbox2Screens
                 if (image.Width != 780 || image.Height != 585)
                 {
                     Console.WriteLine("Invalid level.png image size");
-                    Console.WriteLine("Should be 780px x 585px but found " + image.Width + " " + image.Height);
+                    Console.WriteLine("Should be 780px by 585px but found " + image.Width + "px by " + image.Height + "px");
                     Console.ReadLine();
                     return;
                 }
@@ -76,7 +77,7 @@ namespace Hitbox2Screens
                 if (image.Width != 60 || image.Height != 7605)
                 {
                     Console.WriteLine("Invalid visual_level.png image size");
-                    Console.WriteLine("Should be 60px x 7605px but found " + image.Width + " " + image.Height);
+                    Console.WriteLine("Should be 60px by 7605px but found " + image.Width + "px by " + image.Height + "px");
                     Console.ReadLine();
                     return;
                 }
@@ -93,19 +94,22 @@ namespace Hitbox2Screens
             image.Dispose();
 
             Console.WriteLine("Cleaning up memory");
-            Console.WriteLine("Program has finished running...");
+            Console.WriteLine("Program has finished running");
             Console.ReadLine();
         }
 
         static void Main()
         {
-            var pathStr = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string pathStr = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             Console.WriteLine("Searching for png in: " + pathStr);
-            try { ScaleImage(pathStr); }
+            try
+            {
+                ScaleImage(pathStr);
+            }
             catch (FileNotFoundException)
             {
-                Console.WriteLine("No level.png or visual_level.png found.");
-                Console.WriteLine("Please make sure the png file is in the same folder as the exe.");
+                Console.WriteLine("No level.png or visual_level.png found");
+                Console.WriteLine("Please make sure the png file is in the same folder as the exe");
                 Console.ReadLine();
             }
         }
