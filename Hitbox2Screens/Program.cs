@@ -40,11 +40,7 @@ namespace Hitbox2Screens
                 return;
             }
 
-            Image image;
-            using (var fileStream = new FileStream(imagePath, FileMode.Open))
-            {
-                image = Image.FromStream(fileStream, true, false);
-            }
+            using var image = Image.FromFile(imagePath);
             Console.WriteLine($"Found {image.Width}x{image.Height} image");
             if (image.Width % 60 != 0 || image.Height % 45 != 0)
             {
@@ -56,8 +52,8 @@ namespace Hitbox2Screens
 
             var scaledWidth = image.Width * 8;
             var scaledHeight = image.Height * 8;
-            var scaledBitmap = new Bitmap(scaledWidth, scaledHeight);
-            var scaledGraphics = Graphics.FromImage(scaledBitmap);
+            using var scaledBitmap = new Bitmap(scaledWidth, scaledHeight);
+            using var scaledGraphics = Graphics.FromImage(scaledBitmap);
             scaledGraphics.CompositingQuality = CompositingQuality.AssumeLinear;
             scaledGraphics.InterpolationMode = InterpolationMode.NearestNeighbor;
             scaledGraphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -84,11 +80,6 @@ namespace Hitbox2Screens
                         .Save(Path.Combine(outDir, screen + ".png"));
                 }
             }
-
-            Console.WriteLine("Cleaning up memory");
-            scaledGraphics.Dispose();
-            scaledBitmap.Dispose();
-            image.Dispose();
 
             Console.WriteLine("Program has finished running");
             Console.ReadLine();
