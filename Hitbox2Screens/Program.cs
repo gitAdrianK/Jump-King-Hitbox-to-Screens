@@ -6,112 +6,92 @@ using System.Reflection;
 
 namespace Hitbox2Screens
 {
-    class Program
+    public static class Program
     {
-        private static void ScaleImage(string pathStr)
+        public static void Main()
         {
-            FileStream fileStream = null;
-            Image image;
-            bool isVisualLevel = false;
-            try
+            var exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (exePath is null)
             {
-                if (File.Exists(pathStr + "\\level.png"))
-                {
-                    Console.WriteLine("Found level.png");
-                    fileStream = new FileStream(pathStr + "\\level.png", FileMode.Open, FileAccess.Read);
-                }
-                else if (File.Exists(pathStr + "\\visual_level.png"))
-                {
-                    Console.WriteLine("Found visual_level.png");
-                    fileStream = new FileStream(pathStr + "\\visual_level.png", FileMode.Open, FileAccess.Read);
-                    isVisualLevel = true;
-                }
-                else
-                {
-                    throw new FileNotFoundException();
-                }
-                image = Image.FromStream(fileStream, true, false);
-            }
-            finally
-            {
-                fileStream?.Close();
-                fileStream?.Dispose();
+                Console.WriteLine("Something went wrong getting the path!");
+                Console.ReadLine();
+                return;
             }
 
-            int newWidth = image.Width * 8;
-            int newHeight = image.Height * 8;
-            Bitmap scaledBitmap = new Bitmap(newWidth, newHeight);
-
-            Graphics scaledGraph = Graphics.FromImage(scaledBitmap);
-            scaledGraph.CompositingQuality = CompositingQuality.AssumeLinear;
-            scaledGraph.InterpolationMode = InterpolationMode.NearestNeighbor;
-            scaledGraph.SmoothingMode = SmoothingMode.AntiAlias;
-            scaledGraph.PixelOffsetMode = PixelOffsetMode.Half;
-
-            Rectangle imageRectangle = new Rectangle(0, 0, newWidth, newHeight);
-            scaledGraph.DrawImage(image, imageRectangle);
-
-            pathStr = pathStr + ("\\{0}.png");
-            int screenNo = 0;
-            if (!isVisualLevel)
+            Console.WriteLine($"Searching for png in: {exePath}");
+            string imagePath;
+            var isVisualLevel = false;
+            if (File.Exists(Path.Combine(exePath, "level.png")))
             {
-                if (image.Width != 780 || image.Height != 585)
-                {
-                    Console.WriteLine("Invalid level.png image size");
-                    Console.WriteLine("Should be 780px by 585px but found " + image.Width + "px by " + image.Height + "px");
-                    Console.ReadLine();
-                    return;
-                }
-                for (int i = 0; i < 13; i++)
-                {
-                    for (int j = 0; j < 13; j++)
-                    {
-                        screenNo++;
-                        Rectangle cropArea = new Rectangle(480 * i, 360 * j, 480, 360);
-                        scaledBitmap.Clone(cropArea, scaledBitmap.PixelFormat).Save(string.Format(pathStr, screenNo));
-                    }
-                }
+                imagePath = Path.Combine(exePath, "level.png");
+                Console.WriteLine("Found level.png");
+            }
+            else if (File.Exists(Path.Combine(exePath,"visual_level.png")))
+            {
+                imagePath = Path.Combine(exePath, "visual_level.png");
+                isVisualLevel = true;
+                Console.WriteLine("Found visual_level.png");
             }
             else
-            {
-                if (image.Width != 60 || image.Height != 7605)
-                {
-                    Console.WriteLine("Invalid visual_level.png image size");
-                    Console.WriteLine("Should be 60px by 7605px but found " + image.Width + "px by " + image.Height + "px");
-                    Console.ReadLine();
-                    return;
-                }
-                for (int i = 0; i < 169; i++)
-                {
-                    screenNo++;
-                    Rectangle cropArea = new Rectangle(0, 360 * (168 - i), 480, 360);
-                    scaledBitmap.Clone(cropArea, scaledBitmap.PixelFormat).Save(string.Format(pathStr, screenNo));
-                }
-            }
-
-            scaledGraph.Dispose();
-            scaledBitmap.Dispose();
-            image.Dispose();
-
-            Console.WriteLine("Cleaning up memory");
-            Console.WriteLine("Program has finished running");
-            Console.ReadLine();
-        }
-
-        static void Main()
-        {
-            string pathStr = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            Console.WriteLine("Searching for png in: " + pathStr);
-            try
-            {
-                ScaleImage(pathStr);
-            }
-            catch (FileNotFoundException)
             {
                 Console.WriteLine("No level.png or visual_level.png found");
                 Console.WriteLine("Please make sure the png file is in the same folder as the exe");
                 Console.ReadLine();
+                return;
             }
+
+            Image image;
+            using (var fileStream = new FileStream(imagePath, FileMode.Open))
+            {
+                image = Image.FromStream(fileStream, true, false);
+            }
+            Console.WriteLine($"Found {image.Width}x{image.Height} image");
+            if (image.Width % 60 != 0 || image.Height % 45 != 0)
+            {
+                Console.WriteLine("Invalid size. Should be a multiple of 60x45");
+                Console.WriteLine($"Width off by: {image.Width % 60}");
+                Console.WriteLine($"Height off by: {image.Height % 45}");
+                return;
+            }
+
+            var scaledWidth = image.Width * 8;
+            var scaledHeight = image.Height * 8;
+            var scaledBitmap = new Bitmap(scaledWidth, scaledHeight);
+            var scaledGraphics = Graphics.FromImage(scaledBitmap);
+            scaledGraphics.CompositingQuality = CompositingQuality.AssumeLinear;
+            scaledGraphics.InterpolationMode = InterpolationMode.NearestNeighbor;
+            scaledGraphics.SmoothingMode = SmoothingMode.AntiAlias;
+            scaledGraphics.PixelOffsetMode = PixelOffsetMode.Half;
+            scaledGraphics.DrawImage(image, new Rectangle(0, 0, scaledWidth, scaledHeight));
+
+            var outDir = Path.Combine(exePath, "out");
+            Directory.CreateDirectory(outDir);
+
+            var widthSegments = image.Width / 60;
+            var heightSegments = image.Height / 45;
+            var totalScreens = widthSegments * heightSegments;
+            Console.WriteLine($"Width segments: {widthSegments}");
+            Console.WriteLine($"Height segments: {heightSegments}");
+            Console.WriteLine($"Creating images for {totalScreens} screens");
+
+            for (var i = 0; i < widthSegments; i++)
+            {
+                for (var j = 0; j < heightSegments; j++)
+                {
+                    var screen = isVisualLevel ? totalScreens - (widthSegments * i + j) : widthSegments * i + j + 1;
+                    scaledBitmap
+                        .Clone(new Rectangle(480 * i, 360 * j, 480, 360), scaledBitmap.PixelFormat)
+                        .Save(Path.Combine(outDir, screen + ".png"));
+                }
+            }
+
+            Console.WriteLine("Cleaning up memory");
+            scaledGraphics.Dispose();
+            scaledBitmap.Dispose();
+            image.Dispose();
+
+            Console.WriteLine("Program has finished running");
+            Console.ReadLine();
         }
     }
 }
