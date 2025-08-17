@@ -47,6 +47,7 @@ namespace Hitbox2Screens
                 Console.WriteLine("Invalid size. Should be a multiple of 60x45");
                 Console.WriteLine($"Width off by: {image.Width % 60}");
                 Console.WriteLine($"Height off by: {image.Height % 45}");
+                Console.ReadLine();
                 return;
             }
 
